@@ -10,7 +10,7 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Fishman Shooter')
 
 clock = pygame.time.Clock()
-FPS = 60
+FPS = 600
 
 moving_left = False
 moving_right = False
@@ -68,7 +68,7 @@ while run:
     clock.tick(FPS)
 
     draw_bg()
-    
+
     player.draw()
     enemy.draw()
 
