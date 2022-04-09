@@ -1,9 +1,11 @@
 import pygame
+from pygame import mixer
 import os
 import random
 import csv
 import button
 
+mixer.init()
 pygame.init()
 
 
@@ -29,6 +31,7 @@ screen_scroll = 0
 bg_scroll = 0
 level = 1
 start_game = False
+start_intro = False
 
 #define player action variables
 moving_left = False
@@ -36,6 +39,24 @@ moving_right = False
 shoot = False
 grenade = False
 grenade_thrown = False
+
+#load music and sounds
+
+pygame.mixer.Channel(0).play(pygame.mixer.Sound('assets/audio/startline.mp3'), -1)
+pygame.mixer.Channel(0).set_volume(0.5)
+
+
+# intro_music = pygame.mixer.music.set_volume(0.2)
+# intro_music = pygame.mixer.music.play(-1, 0.0, 5000)
+# game_music = pygame.mixer.music.load('assets/audio/music2.mp3')
+# game_music = pygame.mixer.music.set_volume(0.2)
+
+jump_fx = pygame.mixer.Sound('assets/audio/jump.wav')
+jump_fx.set_volume(0.5)
+shot_fx = pygame.mixer.Sound('assets/audio/shot.wav')
+shot_fx.set_volume(0.5)
+grenade_fx = pygame.mixer.Sound('assets/audio/grenade.wav')
+grenade_fx.set_volume(0.5)
 
 start_img = pygame.image.load('assets/start_btn.png').convert_alpha()
 exit_img = pygame.image.load('assets/exit_btn.png').convert_alpha()
@@ -73,6 +94,7 @@ RED = (255, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
+PINK = (235, 65, 54)
 
 #define font
 font = pygame.font.SysFont('Futura', 30)
@@ -247,6 +269,7 @@ class Fishman(pygame.sprite.Sprite):
             bullet_group.add(bullet)
             #reduce ammo
             self.ammo -= 1
+            shot_fx.play()
             
     def update_animation(self):
           
@@ -281,6 +304,8 @@ class Fishman(pygame.sprite.Sprite):
             self.speed = 0
             self.alive = False
             self.update_action(3)
+            
+            
             
     def draw(self):
         screen.blit(pygame.transform.flip(self.image, self.flip, False), self.rect)
@@ -471,6 +496,7 @@ class Enemy(pygame.sprite.Sprite):
             bullet_group.add(bullet)
             #reduce ammo
             self.ammo -= 1
+            shot_fx.play()
     def ai(self):
         if self.alive and player.alive:
             if self.idling == False and random.randint(1, 200) == 1:
@@ -694,6 +720,7 @@ class Grenade(pygame.sprite.Sprite):
         self.timer -= 1
         if self.timer <= 0:
             self.kill()
+            grenade_fx.play()
             explosion = Explosion(self.rect.x, self.rect.y, 0.5)
             explosion_group.add(explosion)
             #do damage to anyone that is nearby
@@ -737,6 +764,32 @@ class Explosion(pygame.sprite.Sprite):
             else:
                 self.image = self.images[self.frame_index]
 
+class ScreenFade():
+    def __init__(self, direction, colour, speed):
+        self.direction = direction
+        self.colour = colour
+        self.speed = speed
+        self.fade_counter = 0
+
+
+    def fade(self):
+        fade_complete = False
+        self.fade_counter += self.speed
+        if self.direction == 1:#whole screen fade
+            pygame.draw.rect(screen, self.colour, (0 - self.fade_counter, 0, SCREEN_WIDTH // 2, SCREEN_HEIGHT))
+            pygame.draw.rect(screen, self.colour, (SCREEN_WIDTH // 2 + self.fade_counter, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
+            pygame.draw.rect(screen, self.colour, (0, 0 - self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
+            pygame.draw.rect(screen, self.colour, (0, SCREEN_HEIGHT // 2 +self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT))
+        if self.direction == 2:#vertical screen fade down
+            pygame.draw.rect(screen, self.colour, (0, 0, SCREEN_WIDTH, 0 + self.fade_counter))
+        if self.fade_counter >= SCREEN_WIDTH:
+            fade_complete = True
+
+        return fade_complete
+
+intro_fade = ScreenFade(1, BLACK, 4)
+death_fade = ScreenFade(2, PINK, 4) 
+
 #create buttons
 start_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 - 150, start_img, 1)
 exit_button = button.Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 50, exit_img, 1)
@@ -776,11 +829,16 @@ while run:
     clock.tick(FPS)
 
     if start_game == False:
+        
         #draw menu
         screen.fill(BG)
+       
         #add buttons
         if start_button.draw(screen):
             start_game = True
+            pygame.mixer.Channel(0).stop()
+            pygame.mixer.Channel(1).play(pygame.mixer.Sound('assets/audio/bravesteel.mp3'), -1)
+            pygame.mixer.Channel(1).set_volume(0.5)
         if exit_button.draw(screen):
             run = False
     else:
@@ -820,6 +878,11 @@ while run:
         darkwater_group.draw(screen)
         exit_group.draw(screen)
         # item_box_group.draw(screen)
+      #show intro
+    if start_intro == True:
+        if intro_fade.fade():
+            start_intro = False
+            intro_fade.fade_counter = 0
 
     #update player actions
     if player.alive:
@@ -844,6 +907,7 @@ while run:
         bg_scroll -= screen_scroll
         #check if player has completed the level
         if level_complete:
+                start_intro = True
                 level += 1
                 bg_scroll = 0
                 world_data = reset_level()
@@ -858,17 +922,24 @@ while run:
                     player, health_bar = world.process_data(world_data) 
     else:
             screen_scroll = 0
-            if restart_button.draw(screen):
-                bg_scroll = 0
-                world_data = reset_level()
-                #load in level data and create world
-                with open(f'level{level}_data.csv', newline='') as csvfile:
-                    reader = csv.reader(csvfile, delimiter=',')
-                    for x, row in enumerate(reader):
-                        for y, tile in enumerate(row):
-                            world_data[x][y] = int(tile)
-                world = World()
-                player, health_bar = world.process_data(world_data)
+            if death_fade.fade():
+                if player.health <= 0:
+                    pygame.mixer.Channel(1).pause()
+                if restart_button.draw(screen):
+                    pygame.mixer.Channel(1).play(pygame.mixer.Sound('assets/audio/bravesteel.mp3'), -1)
+                    pygame.mixer.Channel(1).set_volume(0.5)
+                    death_fade.fade_counter = 0
+                    start_intro = True
+                    bg_scroll = 0
+                    world_data = reset_level()
+                    #load in level data and create world
+                    with open(f'level{level}_data.csv', newline='') as csvfile:
+                        reader = csv.reader(csvfile, delimiter=',')
+                        for x, row in enumerate(reader):
+                            for y, tile in enumerate(row):
+                                world_data[x][y] = int(tile)
+                    world = World()
+                    player, health_bar = world.process_data(world_data)
 
     for event in pygame.event.get():
         #quit game
@@ -886,6 +957,7 @@ while run:
                 grenade = True
             if event.key == pygame.K_w and player.alive:
                 player.jump = True
+                jump_fx.play()
             if event.key == pygame.K_ESCAPE:
                 run = False
 
