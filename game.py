@@ -1,9 +1,12 @@
+from pickle import FALSE
 import pygame
 from pygame import mixer
 import os
 import random
 import csv
 import button
+from tkinter import messagebox
+
 
 mixer.init()
 pygame.init()
@@ -33,6 +36,7 @@ level = 1
 start_game = False
 start_intro = False
 
+
 #define player action variables
 moving_left = False
 moving_right = False
@@ -45,12 +49,6 @@ grenade_thrown = False
 pygame.mixer.Channel(0).play(pygame.mixer.Sound('assets/audio/startline.mp3'), -1)
 pygame.mixer.Channel(0).set_volume(0.5)
 
-
-# intro_music = pygame.mixer.music.set_volume(0.2)
-# intro_music = pygame.mixer.music.play(-1, 0.0, 5000)
-# game_music = pygame.mixer.music.load('assets/audio/music2.mp3')
-# game_music = pygame.mixer.music.set_volume(0.2)
-
 jump_fx = pygame.mixer.Sound('assets/audio/jump.wav')
 jump_fx.set_volume(0.5)
 shot_fx = pygame.mixer.Sound('assets/audio/shot.wav')
@@ -61,6 +59,7 @@ grenade_fx.set_volume(0.5)
 start_img = pygame.image.load('assets/start_btn.png').convert_alpha()
 exit_img = pygame.image.load('assets/exit_btn.png').convert_alpha()
 restart_img = pygame.image.load('assets/restart_btn.png').convert_alpha()
+ins_img = pygame.image.load('assets/instruction_btn.png').convert_alpha()
 pine1_img = pygame.image.load('assets/Background/pine1.png').convert_alpha()
 pine2_img = pygame.image.load('assets/Background/pine2.png').convert_alpha()
 building_img = pygame.image.load('assets/Background/2.png').convert_alpha()
@@ -232,7 +231,6 @@ class Fishman(pygame.sprite.Sprite):
         #check for collision with water
         if pygame.sprite.spritecollide(self, darkwater_group, False):
             self.health = 0
-            print("yes")
 
         #check for collision with exit
         level_complete = False
@@ -791,8 +789,9 @@ intro_fade = ScreenFade(1, BLACK, 4)
 death_fade = ScreenFade(2, PINK, 4) 
 
 #create buttons
-start_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 - 150, start_img, 1)
-exit_button = button.Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 50, exit_img, 1)
+start_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 - 70, start_img, 1)
+instruction_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 - -50, ins_img, 1)
+exit_button = button.Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 155, exit_img, 1)
 restart_button = button.Button(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, restart_img, 2)
 
 
@@ -831,7 +830,13 @@ while run:
     if start_game == False:
         
         #draw menu
-        screen.fill(BG)
+        # screen.fill(BG)
+        width = sky_img.get_width()
+        for x in range(5):
+            screen.blit(sky_img, ((x * width) - bg_scroll * 0.5, 0))
+            screen.blit(building_img, ((x * width) - bg_scroll * 0.6, SCREEN_HEIGHT - building_img.get_height() - 300))
+            screen.blit(pine1_img, ((x * width) - bg_scroll * 0.7, SCREEN_HEIGHT - pine1_img.get_height() - 150))
+            screen.blit(pine2_img, ((x * width) - bg_scroll * 0.8, SCREEN_HEIGHT - pine2_img.get_height()))
        
         #add buttons
         if start_button.draw(screen):
@@ -841,6 +846,8 @@ while run:
             pygame.mixer.Channel(1).set_volume(0.5)
         if exit_button.draw(screen):
             run = False
+        if instruction_button.draw(screen):
+            messagebox.showinfo("Game Instructions", " W to Jump \n D to Move Right \n A to Move Left \n Space to Shoot \n Q to throw Grenade \n ESC to exit the game")   
     else:
         #update background
         draw_bg()
@@ -919,7 +926,86 @@ while run:
                             for y, tile in enumerate(row):
                                 world_data[x][y] = int(tile)
                     world = World()
-                    player, health_bar = world.process_data(world_data) 
+                    player, health_bar = world.process_data(world_data)
+                if level > MAX_LEVELS:
+                    messagebox.showinfo("Congratulations", " You Clear The Game")   
+                    pygame.mixer.Channel(1).stop()
+                    pygame.mixer.Channel(0).play(pygame.mixer.Sound('assets/audio/startline.mp3'), -1)
+                    pygame.mixer.Channel(0).set_volume(0.5)
+                    start_game = False
+                    level = 1
+                    death_fade.fade_counter = 0
+                    start_intro = True
+                    bg_scroll = 0
+                    world_data = reset_level()
+                    #load in level data and create world
+                    with open(f'level{level}_data.csv', newline='') as csvfile:
+                        reader = csv.reader(csvfile, delimiter=',')
+                        for x, row in enumerate(reader):
+                            for y, tile in enumerate(row):
+                                world_data[x][y] = int(tile)
+                    world = World()
+                    player, health_bar = world.process_data(world_data)
+                    if start_game == False:
+        
+                        #draw menu
+                        # screen.fill(BG)
+                        width = sky_img.get_width()
+                        for x in range(5):
+                            screen.blit(sky_img, ((x * width) - bg_scroll * 0.5, 0))
+                            screen.blit(building_img, ((x * width) - bg_scroll * 0.6, SCREEN_HEIGHT - building_img.get_height() - 300))
+                            screen.blit(pine1_img, ((x * width) - bg_scroll * 0.7, SCREEN_HEIGHT - pine1_img.get_height() - 150))
+                            screen.blit(pine2_img, ((x * width) - bg_scroll * 0.8, SCREEN_HEIGHT - pine2_img.get_height()))
+                    
+                        #add buttons
+                        if start_button.draw(screen):
+                            start_game = True
+                            pygame.mixer.Channel(0).stop()
+                            pygame.mixer.Channel(1).play(pygame.mixer.Sound('assets/audio/bravesteel.mp3'), -1)
+                            pygame.mixer.Channel(1).set_volume(0.5)
+                        if exit_button.draw(screen):
+                            run = False
+                        if instruction_button.draw(screen):
+                             if instruction_button.draw(screen):
+                                 messagebox.showinfo("Game Instructions", " W to Jump \n D to Move Right \n A to Move Left \n Space to Shoot \n Q to throw Grenade \n ESC to exit the game")   
+                    else:
+                        #update background
+                        draw_bg()
+                        #draw world map
+                        world.draw()
+                        #show player health
+                        health_bar.draw(player.health)
+                        #show ammo
+                        draw_text('AMMO: ', font, WHITE, 10, 35)
+                        for x in range(player.ammo):
+                            screen.blit(bullet_img, (90 + (x * 10), 40))
+                        #show grenades
+                        draw_text('GRENADES: ', font, WHITE, 10, 60)
+                        for x in range(player.grenades):
+                            screen.blit(grenade_img, (135 + (x * 15), 60))
+
+                        player.update()
+                        player.draw()
+
+                        for enemy in enemy_group:
+                                enemy.ai()
+                                enemy.update()
+                                enemy.draw()
+
+                        #update and draw groups
+                        bullet_group.update()
+                        grenade_group.update()
+                        explosion_group.update()
+                        darkwater_group.update()
+                        exit_group.update()
+                        #item_box_group.update()
+                        bullet_group.draw(screen)
+                        grenade_group.draw(screen)
+                        explosion_group.draw(screen)
+                        darkwater_group.draw(screen)
+                        exit_group.draw(screen)
+                        # item_box_group.draw(screen)
+
     else:
             screen_scroll = 0
             if death_fade.fade():
