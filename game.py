@@ -117,8 +117,8 @@ def reset_level():
     bullet_group.empty()
     grenade_group.empty()
     explosion_group.empty()
-    # item_box_group.empty()
-    # decoration_group.empty()
+    item_box_group.empty()
+    decoration_group.empty()
     darkwater_group.empty()
     exit_group.empty()
 
@@ -325,37 +325,75 @@ class World():
                     tile_data = (img, img_rect)
                     if tile >= 0 and tile <= 95:
                         self.obstacle_list.append(tile_data)
-                     # elif tile >= 11 and tile <= 14:
-                    #     decoration = Decoration(img, x * TILE_SIZE, y * TILE_SIZE)
-                    #     decoration_group.add(decoration)
-                    elif tile == 96:#create player
-                        player = Fishman('player', x * TILE_SIZE , y * TILE_SIZE, 1.65, 5, 20, 5)
-                        health_bar = HealthBar(10, 10, player.health, player.health)
-                    elif tile == 97:#create enemies
-                        enemy = Enemy('enemy', x * TILE_SIZE , y * TILE_SIZE, 1.65, 2, 20, 0)
-                        enemy_group.add(enemy)
-                    # elif tile == 17:#create ammo box
-                    #     item_box = ItemBox('Ammo', x * TILE_SIZE, y * TILE_SIZE)
-                    #     item_box_group.add(item_box)
-                    # elif tile == 18:#create grenade box
-                    #     item_box = ItemBox('Grenade', x * TILE_SIZE, y * TILE_SIZE)
-                    #     item_box_group.add(item_box)
-                    # elif tile == 19:#create health box
-                    #     item_box = ItemBox('Health', x * TILE_SIZE, y * TILE_SIZE)
-                    #     item_box_group.add(item_box)
-                    elif tile == 98:#create exit
-                        exit = Exit(img, x * TILE_SIZE, y * TILE_SIZE)
-                        exit_group.add(exit)
                     elif tile >= 99 and tile <= 100:
                         darkwater = DarkWater(img, x * TILE_SIZE, y * TILE_SIZE)
                         darkwater_group.add(darkwater)
+                    elif tile >= 104 and tile <= 110:
+                        decoration = Decoration(img, x * TILE_SIZE, y * TILE_SIZE)
+                        decoration_group.add(decoration)
+                    elif tile == 96:#create player
+                        player = Fishman('player', x * TILE_SIZE, y * TILE_SIZE, 1.65, 5, 20, 5)
+                        health_bar = HealthBar(10, 10, player.health, player.health)
+                    elif tile == 97:#create enemies
+                        enemy = Enemy('enemy', x * TILE_SIZE, y * TILE_SIZE, 1.65, 2, 20, 0)
+                        enemy_group.add(enemy)
+                    elif tile == 101:#create ammo box
+                        item_box = ItemBox('Ammo', x * TILE_SIZE, y * TILE_SIZE)
+                        item_box_group.add(item_box)
+                    elif tile == 102:#create grenade box
+                        item_box = ItemBox('Grenade', x * TILE_SIZE, y * TILE_SIZE)
+                        item_box_group.add(item_box)
+                    elif tile == 103:#create health box
+                        item_box = ItemBox('Health', x * TILE_SIZE, y * TILE_SIZE)
+                        item_box_group.add(item_box)
+                    elif tile == 98:#create exit
+                        exit = Exit(img, x * TILE_SIZE, y * TILE_SIZE)
+                        exit_group.add(exit)
 
         return player, health_bar
+
 
     def draw(self):
         for tile in self.obstacle_list:
             tile[1][0] += screen_scroll
             screen.blit(tile[0], tile[1])
+
+class Decoration(pygame.sprite.Sprite):
+    def __init__(self, img, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = img
+        self.rect = self.image.get_rect()
+        self.rect.midtop = (x + TILE_SIZE // 2, y + (TILE_SIZE - self.image.get_height()))
+
+    def update(self):
+        self.rect.x += screen_scroll
+        
+class ItemBox(pygame.sprite.Sprite):
+    def __init__(self, item_type, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.item_type = item_type
+        self.image = item_boxes[self.item_type]
+        self.rect = self.image.get_rect()
+        self.rect.midtop = (x + TILE_SIZE // 2, y + (TILE_SIZE - self.image.get_height()))
+
+
+    def update(self):
+        #scroll
+        self.rect.x += screen_scroll
+        #check if the player has picked up the box
+        if pygame.sprite.collide_rect(self, player):
+            #check what kind of box it was
+            if self.item_type == 'Health':
+                player.health += 25
+                if player.health > player.max_health:
+                    player.health = player.max_health
+            elif self.item_type == 'Ammo':
+                player.ammo += 15
+            elif self.item_type == 'Grenade':
+                player.grenades += 3
+            #delete the item box
+            self.kill()
+
 
 class DarkWater(pygame.sprite.Sprite):
     def __init__(self, img, x, y):
@@ -567,31 +605,6 @@ class Enemy(pygame.sprite.Sprite):
     def draw(self):
         screen.blit(pygame.transform.flip(self.image, self.flip, False), self.rect)
 
-class ItemBox(pygame.sprite.Sprite):
-    def __init__(self, item_type, x, y):
-        pygame.sprite.Sprite.__init__(self)
-        self.item_type = item_type
-        self.image = item_boxes[self.item_type]
-        self.rect = self.image.get_rect()
-        self.rect.midtop = (x + TILE_SIZE // 5, y + (TILE_SIZE - self.image.get_height()))
-
-
-    def update(self):
-        #check if the player has picked up the box
-        if pygame.sprite.collide_rect(self, player):
-            #check what kind of box it was
-            if self.item_type == 'Health':
-                player.health += 25
-                if player.health > player.max_health:
-                    player.health = player.max_health
-            elif self.item_type == 'Ammo':
-                player.ammo += 15
-            elif self.item_type == 'Grenade':
-                player.grenades += 3
-            #delete the item box
-            self.kill()
-
-
 class HealthBar():
     def __init__(self, x, y, health, max_health):
         self.x = x
@@ -800,8 +813,8 @@ enemy_group = pygame.sprite.Group()
 bullet_group = pygame.sprite.Group()
 grenade_group = pygame.sprite.Group()
 explosion_group = pygame.sprite.Group()
-# item_box_group = pygame.sprite.Group()
-# decoration_group = pygame.sprite.Group()
+item_box_group = pygame.sprite.Group()
+decoration_group = pygame.sprite.Group()
 darkwater_group = pygame.sprite.Group()
 exit_group = pygame.sprite.Group()
 
@@ -876,15 +889,17 @@ while run:
         bullet_group.update()
         grenade_group.update()
         explosion_group.update()
+        item_box_group.update()
+        decoration_group.update()
         darkwater_group.update()
         exit_group.update()
-        #item_box_group.update()
         bullet_group.draw(screen)
         grenade_group.draw(screen)
         explosion_group.draw(screen)
+        item_box_group.draw(screen)
+        decoration_group.draw(screen)
         darkwater_group.draw(screen)
         exit_group.draw(screen)
-        # item_box_group.draw(screen)
       #show intro
     if start_intro == True:
         if intro_fade.fade():
@@ -998,13 +1013,15 @@ while run:
                         explosion_group.update()
                         darkwater_group.update()
                         exit_group.update()
-                        #item_box_group.update()
+                        item_box_group.update()
+                        decoration_group.update()
                         bullet_group.draw(screen)
                         grenade_group.draw(screen)
                         explosion_group.draw(screen)
                         darkwater_group.draw(screen)
                         exit_group.draw(screen)
-                        # item_box_group.draw(screen)
+                        item_box_group.draw(screen)
+                        decoration_group.draw(screen)
 
     else:
             screen_scroll = 0
