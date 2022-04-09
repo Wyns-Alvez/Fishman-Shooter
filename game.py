@@ -30,9 +30,28 @@ grenade_thrown = False
 bullet_img = pygame.image.load('assets/bullet/bullet.png').convert_alpha()
 
 grenade_img = pygame.image.load('assets/grenade/grenade.png').convert_alpha()
+
+health_box_img = pygame.image.load('assets/box/health_box.png').convert_alpha()
+ammo_box_img = pygame.image.load('assets/box/ammo_box.png').convert_alpha()
+grenade_box_img = pygame.image.load('assets/box/grenade_box.png').convert_alpha()
+item_boxes = {
+    'Health'    : health_box_img,
+    'Ammo'      : ammo_box_img,
+    'Grenade'   : grenade_box_img
+}
 #define colours
 BG = (144, 201, 120)
 RED = (255, 0, 0)
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+BLACK = (0, 0, 0)
+
+#define font
+font = pygame.font.SysFont('Futura', 30)
+
+def draw_text(text, font, text_col, x, y):
+    img = font.render(text, True, text_col)
+    screen.blit(img, (x, y))
 
 def draw_bg():
     screen.fill(BG)
@@ -124,7 +143,7 @@ class Fishman(pygame.sprite.Sprite):
     def shoot(self):
         if self.shoot_cooldown == 0 and self.ammo > 0:
             self.shoot_cooldown = 20
-            bullet = Bullet(self.rect.centerx + (0.6 * self.rect.size[0] * self.direction), self.rect.centery, self.direction)
+            bullet = Bullet(self.rect.centerx + (0.9 * self.rect.size[0] * self.direction), self.rect.centery, self.direction)
             bullet_group.add(bullet)
             #reduce ammo
             self.ammo -= 1
@@ -168,7 +187,7 @@ class Fishman(pygame.sprite.Sprite):
 
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, char_type, x, y, scale, speed, ammo):
+    def __init__(self, char_type, x, y, scale, speed, ammo, grenades):
         pygame.sprite.Sprite.__init__(self)
         self.alive = True
         self.char_type = char_type
@@ -176,6 +195,7 @@ class Enemy(pygame.sprite.Sprite):
         self.ammo = ammo
         self.start_ammo = ammo
         self.shoot_cooldown = 0
+        self.grenades = grenades
         self.health = 100
         self.max_health = self.health
         self.direction = 1
@@ -252,7 +272,7 @@ class Enemy(pygame.sprite.Sprite):
     def shoot(self):
         if self.shoot_cooldown == 0 and self.ammo > 0:
             self.shoot_cooldown = 20
-            bullet = Bullet(self.rect.centerx + (0.6 * self.rect.size[0] * self.direction), self.rect.centery, self.direction)
+            bullet = Bullet(self.rect.centerx + (0.9 * self.rect.size[0] * self.direction), self.rect.centery, self.direction)
             bullet_group.add(bullet)
             #reduce ammo
             self.ammo -= 1
@@ -294,8 +314,50 @@ class Enemy(pygame.sprite.Sprite):
     def draw(self):
         screen.blit(pygame.transform.flip(self.image, self.flip, False), self.rect)
 
+class ItemBox(pygame.sprite.Sprite):
+    def __init__(self, item_type, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.item_type = item_type
+        self.image = item_boxes[self.item_type]
+        self.rect = self.image.get_rect()
+        self.rect.midtop = (x + TILE_SIZE // 5, y + (TILE_SIZE - self.image.get_height()))
+
+
+    def update(self):
+        #check if the player has picked up the box
+        if pygame.sprite.collide_rect(self, player):
+            #check what kind of box it was
+            if self.item_type == 'Health':
+                player.health += 25
+                if player.health > player.max_health:
+                    player.health = player.max_health
+            elif self.item_type == 'Ammo':
+                player.ammo += 15
+            elif self.item_type == 'Grenade':
+                player.grenades += 3
+            #delete the item box
+            self.kill()
+
+
+class HealthBar():
+    def __init__(self, x, y, health, max_health):
+        self.x = x
+        self.y = y
+        self.health = health
+        self.max_health = max_health
+
+    def draw(self, health):
+        #update with new health
+        self.health = health
+        #calculate health ratio
+        ratio = self.health / self.max_health
+        pygame.draw.rect(screen, BLACK, (self.x - 2, self.y - 2, 154, 24))
+        pygame.draw.rect(screen, RED, (self.x, self.y, 150, 20))
+        pygame.draw.rect(screen, GREEN, (self.x, self.y, 150 * ratio, 20))
+
+
+
 class Bullet(pygame.sprite.Sprite):
-    
     def __init__(self, x, y, direction):
         pygame.sprite.Sprite.__init__(self)
         self.speed = 10
@@ -401,11 +463,20 @@ enemy_group = pygame.sprite.Group()
 bullet_group = pygame.sprite.Group()
 grenade_group = pygame.sprite.Group()
 explosion_group = pygame.sprite.Group()
+item_box_group = pygame.sprite.Group()
+
+item_box = ItemBox('Health', 100, 260)
+item_box_group.add(item_box)
+item_box = ItemBox('Ammo', 400, 260)
+item_box_group.add(item_box)
+item_box = ItemBox('Grenade', 500, 260)
+item_box_group.add(item_box)
 
 player = Fishman('player',200, 200, 1, 5, 20, 5)
+health_bar = HealthBar(10, 10, player.health, player.health)
 
-enemy = Enemy('enemy',350, 275, 1, 5, 20)
-enemy2 = Enemy('enemy',300, 275, 1, 5, 20)
+enemy = Enemy('enemy',350, 275, 1, 5, 20, 0)
+enemy2 = Enemy('enemy',300, 275, 1, 5, 20, 0)
 
 enemy_group.add(enemy)
 enemy_group.add(enemy2)
@@ -419,6 +490,16 @@ while run:
     clock.tick(FPS)
 
     draw_bg()
+    health_bar.draw(player.health)
+
+     #show ammo
+    draw_text('AMMO: ', font, WHITE, 10, 35)
+    for x in range(player.ammo):
+        screen.blit(bullet_img, (90 + (x * 10), 40))
+    #show grenades
+    draw_text('GRENADES: ', font, WHITE, 10, 60)
+    for x in range(player.grenades):
+        screen.blit(grenade_img, (135 + (x * 15), 60))
 
     player.update()
     player.draw()
@@ -431,9 +512,11 @@ while run:
     bullet_group.update()
     grenade_group.update()
     explosion_group.update()
+    item_box_group.update()
     bullet_group.draw(screen)
     grenade_group.draw(screen)
     explosion_group.draw(screen)
+    item_box_group.draw(screen)
 
     #update player actions
     if player.alive:
