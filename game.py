@@ -60,6 +60,8 @@ start_img = pygame.image.load('assets/start_btn.png').convert_alpha()
 exit_img = pygame.image.load('assets/exit_btn.png').convert_alpha()
 restart_img = pygame.image.load('assets/restart_btn.png').convert_alpha()
 ins_img = pygame.image.load('assets/instruction_btn.png').convert_alpha()
+over_img = pygame.image.load('assets/game_over.png').convert_alpha()
+game_img = pygame.image.load('assets/game_title.png').convert_alpha()
 pine1_img = pygame.image.load('assets/Background/pine1.png').convert_alpha()
 pine2_img = pygame.image.load('assets/Background/pine2.png').convert_alpha()
 building_img = pygame.image.load('assets/Background/2.png').convert_alpha()
@@ -803,8 +805,11 @@ death_fade = ScreenFade(2, PINK, 4)
 
 #create buttons
 start_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 - 70, start_img, 1)
+game_over_display = button.Button(SCREEN_WIDTH // 2 - 580, SCREEN_HEIGHT // 2 - 500, over_img, 1)
+title_img = button.Button(SCREEN_WIDTH // 2 - 580, SCREEN_HEIGHT // 2 - 500, game_img, 1)
 instruction_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 - -50, ins_img, 1)
 exit_button = button.Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 155, exit_img, 1)
+exit_button2 = button.Button(SCREEN_WIDTH // 2 - 96, SCREEN_HEIGHT // 2 + 40, exit_img, 1)
 restart_button = button.Button(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, restart_img, 2)
 
 
@@ -841,6 +846,8 @@ while run:
     clock.tick(FPS)
 
     if start_game == False:
+
+        title_img.draw(screen) 
         
         #draw menu
         # screen.fill(BG)
@@ -860,7 +867,9 @@ while run:
         if exit_button.draw(screen):
             run = False
         if instruction_button.draw(screen):
-            messagebox.showinfo("Game Instructions", " W to Jump \n D to Move Right \n A to Move Left \n Space to Shoot \n Q to throw Grenade \n ESC to exit the game")   
+            messagebox.showinfo("Game Instructions", " W to Jump \n D to Move Right \n A to Move Left \n Space to Shoot \n Q to throw Grenade \n ESC to exit the game")
+        title_img.draw(screen)
+            
     else:
         #update background
         draw_bg()
@@ -1026,6 +1035,7 @@ while run:
     else:
             screen_scroll = 0
             if death_fade.fade():
+                game_over_display.draw(screen)
                 if player.health <= 0:
                     pygame.mixer.Channel(1).pause()
                 if restart_button.draw(screen):
@@ -1043,6 +1053,8 @@ while run:
                                 world_data[x][y] = int(tile)
                     world = World()
                     player, health_bar = world.process_data(world_data)
+                if exit_button2.draw(screen):
+                    run = False
 
     for event in pygame.event.get():
         #quit game
