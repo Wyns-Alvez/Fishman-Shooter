@@ -32,9 +32,10 @@ TILE_TYPES = 114
 MAX_LEVELS = 6
 screen_scroll = 0
 bg_scroll = 0
-level = 5
+level = 1
 start_game = False
 start_intro = False
+muted = False
 
 
 #define player action variables
@@ -1134,10 +1135,31 @@ world = World()
 player, health_bar = world.process_data(world_data)
 
 
+def play_pause():
+    global paused
+    paused = False
+    if paused:
+        pygame.mixer.Channel(1).unpause()
+        paused = False
+        print('unpause')
+    else:
+        pygame.mixer.Channel(1).pause()
+        print('pause')
+        paused = True
+
+def mute_music():
+    global muted
+    if muted:  # Unmute the music
+        pygame.mixer.Channel(1).set_volume(0.5)
+        muted = False
+    else:  # mute the music
+        pygame.mixer.Channel(1).set_volume(0)
+        muted = True
 
 
 run = True
 while run:
+
 
     clock.tick(FPS)
 
@@ -1163,7 +1185,7 @@ while run:
         if exit_button.draw(screen):
             run = False
         if instruction_button.draw(screen):
-            messagebox.showinfo("Game Instructions", " W to Jump \n D to Move Right \n A to Move Left \n Space to Shoot \n Q to throw Grenade \n ESC to exit the game")
+            messagebox.showinfo("Game Instructions", " W to Jump \n D to Move Right \n A to Move Left \n Space to Shoot \n Q to throw Grenade \n ESC to exit the game \n E to mute Background Music")
         title_img.draw(screen)
             
     else:
@@ -1391,6 +1413,8 @@ while run:
                 jump_fx.play()
             if event.key == pygame.K_ESCAPE:
                 run = False
+            if event.key == pygame.K_e:
+                mute_music()
 
 
         #keyboard button released
