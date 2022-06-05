@@ -36,6 +36,8 @@ level = 1
 start_game = False
 start_intro = False
 muted = False
+game_paused = False
+start_paused = False
 
 
 #define player action variables
@@ -60,6 +62,7 @@ grenade_fx.set_volume(0.5)
 start_img = pygame.image.load('assets/start_btn.png').convert_alpha()
 exit_img = pygame.image.load('assets/exit_btn.png').convert_alpha()
 restart_img = pygame.image.load('assets/restart_btn.png').convert_alpha()
+resume_img = pygame.image.load('assets/resume_btn.png').convert_alpha()
 ins_img = pygame.image.load('assets/instruction_btn.png').convert_alpha()
 over_img = pygame.image.load('assets/game_over.png').convert_alpha()
 game_img = pygame.image.load('assets/game_title.png').convert_alpha()
@@ -1106,6 +1109,7 @@ instruction_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 -
 exit_button = button.Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 155, exit_img, 1)
 exit_button2 = button.Button(SCREEN_WIDTH // 2 - 96, SCREEN_HEIGHT // 2 + 40, exit_img, 1)
 restart_button = button.Button(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, restart_img, 2)
+resume_button = button.Button(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, resume_img, 2)
 
 
 #create sprite groups
@@ -1159,6 +1163,11 @@ def mute_music():
 
 run = True
 while run:
+
+    if game_paused == True:
+        start_paused = True
+    else:
+        start_paused = False
 
 
     clock.tick(FPS)
@@ -1252,6 +1261,15 @@ while run:
         if intro_fade.fade():
             start_intro = False
             intro_fade.fade_counter = 0
+    if start_paused == True:
+            screen.fill((52, 78, 91))
+            start_game = False
+            if resume_button.draw(screen):
+                mute_music()
+                start_game = True
+                game_paused = False
+                start_paused = False
+
 
     #update player actions
     if player.alive:
@@ -1415,6 +1433,9 @@ while run:
                 run = False
             if event.key == pygame.K_e:
                 mute_music()
+            if event.key == pygame.K_p:
+                mute_music()
+                game_paused = True
 
 
         #keyboard button released
