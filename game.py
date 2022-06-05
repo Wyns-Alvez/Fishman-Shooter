@@ -1194,7 +1194,7 @@ while run:
         if exit_button.draw(screen):
             run = False
         if instruction_button.draw(screen):
-            messagebox.showinfo("Game Instructions", " W to Jump \n D to Move Right \n A to Move Left \n Space to Shoot \n Q to throw Grenade \n ESC to exit the game \n E to mute Background Music")
+            messagebox.showinfo("Game Instructions", " W to Jump \n D to Move Right \n A to Move Left \n Space to Shoot \n Q to throw Grenade \n ESC to exit the game \n E to mute Background Music \n P to pause the game")
         title_img.draw(screen)
             
     else:
@@ -1347,7 +1347,7 @@ while run:
                             run = False
                         if instruction_button.draw(screen):
                              if instruction_button.draw(screen):
-                                 messagebox.showinfo("Game Instructions", " W to Jump \n D to Move Right \n A to Move Left \n Space to Shoot \n Q to throw Grenade \n ESC to exit the game")   
+                                 messagebox.showinfo("Game Instructions", " W to Jump \n D to Move Right \n A to Move Left \n Space to Shoot \n Q to throw Grenade \n ESC to exit the game \n E to mute Background Music \n P to pause the game")   
                     else:
                         #update background
                         draw_bg()
